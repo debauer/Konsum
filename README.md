@@ -21,6 +21,6 @@ datenbank schema importieren
 
 ## Dudes die versuchen das das irgendwann mal läuft
 
-* **Egon**
-  **Korkenzieher**
+* **Egon**,
+  **Korkenzieher**,
   **Pcaroli** hoffentlich ;)
