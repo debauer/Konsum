@@ -54,6 +54,7 @@ CREATE TABLE `Transaction` (
 
 CREATE TABLE `User` (
   `UserID` int(11) NOT NULL,
+  `UserPin` int(11) NOT NULL,
   `NickName` text NOT NULL,
   `KartenID` text NOT NULL,
   `Creation` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
