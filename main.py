@@ -25,12 +25,33 @@ focusId = -1
 ident = identDefault
 session = {"cart": [], "lastTransactionGoods": [], "shortCart": []}
 
+goods = []
+goods.append({"name": "0.10 Gold einzahlen",  "gold": -0.1})
+goods.append({"name": "1 Gold einzahlen",  "gold": -1})
+goods.append({"name": "10 Gold einzahlen",  "gold": -10})
+goods.append({"name": "Premium Cola",  "gold": 0.33})
+goods.append({"name": "Premium Fanta", "gold": 0.77})
+goods.append({"name": "Fritz Cola", "gold": 0.77})
+goods.append({"name": "Fritz Orange", "gold": 0.77})
+goods.append({"name": "Fritz Pfirsich", "gold": 0.77})
+goods.append({"name": "Fritz Apfel", "gold": 0.77})
+goods.append({"name": "Warsteiner", "gold": 0.77})
+goods.append({"name": "Becks", "gold": 0.77})
+goods.append({"name": "Rothaus", "gold": 0.77})
+goods.append({"name": "Krümel", "gold": 0.77})
+goods.append({"name": "Kaka", "gold": 0.77})
+goods.append({"name": "Geschirr", "gold": 0.77})
+goods.append({"name": "Lukas3", "gold": 0.77})
+
 def reset():
 	global ident, colors
 	colors = colorDefault
 	ident = identDefault
 	session["cart"].clear()
-	session["shortCart"].clear()
+	session["cart"] = goods.copy()
+	for s in session["cart"]:
+		s["amount"] = 0
+		s["touched"] = False
 	lastTransactionGoods.clear()
 
 def logout():
@@ -41,24 +62,6 @@ def login():
 	colors = colorAuthed
 	ident = identMock
 
-
-goods = []
-goods.append({"name": "0.10 Gold einzahlen",  "gold": -1, "amount": 1})
-goods.append({"name": "1 Gold einzahlen",  "gold": -1, "amount": 1})
-goods.append({"name": "10 Gold einzahlen",  "gold": -1, "amount": 1})
-goods.append({"name": "Premium Cola",  "gold": 0.33, "amount": 1})
-goods.append({"name": "Premium Fanta", "gold": 0.77, "amount": 1})
-goods.append({"name": "Fritz Cola", "gold": 0.77, "amount": 1})
-goods.append({"name": "Fritz Orange", "gold": 0.77, "amount": 1})
-goods.append({"name": "Fritz Pfirsich", "gold": 0.77, "amount": 1})
-goods.append({"name": "Fritz Apfel", "gold": 0.77, "amount": 1})
-goods.append({"name": "Warsteiner", "gold": 0.77, "amount": 1})
-goods.append({"name": "Becks", "gold": 0.77, "amount": 1})
-goods.append({"name": "Rothaus", "gold": 0.77, "amount": 1})
-goods.append({"name": "Krümel", "gold": 0.77, "amount": 1})
-goods.append({"name": "Kaka", "gold": 0.77, "amount": 1})
-goods.append({"name": "Geschirr", "gold": 0.77, "amount": 1})
-goods.append({"name": "Lukas3", "gold": 0.77, "amount": 1})
 
 colorDefault = {"color1": "white", 
 				"color2": "grey",
@@ -134,19 +137,39 @@ def getIndexOfArray(index, array):
 		return {"name":"", "amount": 0}
 	return array[index]
 
+def getCartList():
+	i = 0
+	data = []
+	for s in session["cart"]:
+		if s["amount"] != 0:
+			data.append(s)
+	while i < 10:
+		data.append(False)
+		i=i+1
+	return data
+
+def getCartAmount():
+	a = 0
+	for s in session["cart"]:
+		a = a + (s["amount"] * s["gold"])
+	return a
 
 
 def body():
 	global focusId
-	print(headline(" verfügbare Konsumgüter") + " " * 52 + headline("Konsumkorb:"))
+	print(headline(" verfügbare Konsumgüter") + " " * 52 + headline("Konsumkorb ")+gold("["+str(getCartAmount())+"]",getCartAmount()*-1)+headline(":"))
 	lines = 15
 	rows = 10
+	cartList = getCartList()
 	print()
 	for i in range(0,rows):
 		c1 = " " + '%2s' % str(i) + ": " + '%-20s' % getIndexOfArray(i,goods)["name"]
 		c2 = " " + '%2s' % str(rows+i) + ": " + '%-20s' % getIndexOfArray(rows+i,goods)["name"]
 		c3 = " " + '%2s' % str(2*rows+i) + ": " + '%-20s' % getIndexOfArray(2*rows+i,goods)["name"]
-		c4 = " " + str(getIndexOfArray(i,session["shortCart"])["amount"]) + "x "+ '%-20s' % getIndexOfArray(i,session["shortCart"])["name"] 
+		if cartList[i]:
+			c4 = " " + str(cartList[i]["amount"]) + "x "+ '%-20s' % cartList[i]["name"] 
+		else:
+			c4 = ""
 		if i == focusId: c1 = color3(c1)
 		if rows+i == focusId: c2 = color3(c2)
 		if 2*rows+i == focusId: c3 = color3(c3)
@@ -166,37 +189,15 @@ def auth():
 	#check auth
 	return {"authed": True, "id": 7, "name": name, }
 
-def buildShortCart():
-	session["shortCart"].clear()
-	for c in session["cart"]:
-		found = False
-		for sc in session["shortCart"]:
-			if sc["name"] == c["name"]:
-				sc["amount"] = sc["amount"] + c["amount"]
-				found = True
-		if not found:
-			cc = c.copy()
-			cc["amount"] = 1
-			session["shortCart"].append(cc)
-
 def removeGoodfromCart(id):
-	global session, goods, debugStr
-	if id <= len(goods):
-		for i in range(0,len(session["cart"])):
-			#debugStr = debugStr + session["cart"][i]["name"] + goods[id]["name"]
-			if "asd" == "asd":
-				session["cart"].pop(i)
-				debugStr = session["cart"]
-				break;
-				# remove 
-	buildShortCart()
-
+	global session, debugStr
+	session["cart"][id]["amount"] = session["cart"][id]["amount"] - 1
+	session["cart"][id]["touched"] = True
 
 def addGoodToCart(id):
-	global session, goods
-	if id <= len(goods):
-		session["cart"].append(goods[id])
-	buildShortCart()
+	global session, debugStr
+	session["cart"][id]["amount"] = session["cart"][id]["amount"] + 1
+	session["cart"][id]["touched"] = True
 
 	# build shortCart
 
