@@ -19,6 +19,7 @@ timeOutDefault = 300
 timeOut = timeOutDefault
 inputStr = ""
 infoStr = ""
+debugStr = ""
 focusId = -1
 
 ident = identDefault
@@ -165,10 +166,7 @@ def auth():
 	#check auth
 	return {"authed": True, "id": 7, "name": name, }
 
-def addGoodToCart(id):
-	global session, goods
-	if id <= len(goods):
-		session["cart"].append(goods[id])
+def buildShortCart():
 	session["shortCart"].clear()
 	for c in session["cart"]:
 		found = False
@@ -181,15 +179,37 @@ def addGoodToCart(id):
 			cc["amount"] = 1
 			session["shortCart"].append(cc)
 
+def removeGoodfromCart(id):
+	global session, goods, debugStr
+	if id <= len(goods):
+		for i in range(0,len(session["cart"])):
+			#debugStr = debugStr + session["cart"][i]["name"] + goods[id]["name"]
+			if "asd" == "asd":
+				session["cart"].pop(i)
+				debugStr = session["cart"]
+				break;
+				# remove 
+	buildShortCart()
+
+
+def addGoodToCart(id):
+	global session, goods
+	if id <= len(goods):
+		session["cart"].append(goods[id])
+	buildShortCart()
+
 	# build shortCart
 
-def inputHandler(enter):
+def inputHandler(command):
 	global infoStr, focusId
 	try:
 		i = int(inputStr)
-		if enter:
-			infoStr = "Konsumgut mit id "+str(i)+" gefunden"
+		if command == "add":
+			infoStr = "Konsumgut "+str(i)+" hinzugefügt"
 			addGoodToCart(i)
+		if command == "sub":
+			infoStr = "Konsumgut "+str(i)+" entfernt"
+			removeGoodfromCart(i)
 		else:
 			focusId = i
 	except ValueError:
@@ -204,8 +224,10 @@ def keyHandler():
 		while True:
 			time.sleep(0.01)
 			key = getkey()
-			if key == "e" or key == "E":
-				inputHandler(True)
+			if key == "-" or key == "_":
+				inputHandler("sub")
+			elif key == "+" or key == "*":
+				inputHandler("add")
 				#inputStr = "" # lieber mal drin lassen für mehrfach kauf
 				#focusId = -1 # same as above
 			elif key == "q" or key == "Q":
@@ -253,7 +275,7 @@ if __name__ == '__main__':
 		printInput() # lines
 		footer() # 4 lines
 		status()
-		#print(session)
+		print(debugStr)
 		time.sleep(0.1)
 		timeOutHandler()
 		
