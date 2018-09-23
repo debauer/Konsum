@@ -1,5 +1,7 @@
 #!/usr/bin/env python3 
-import os, sys, time
+import os, sys, time, _thread, keyboard
+from getkey import getkey, keys
+
 try:
   from termcolor import colored
 except ImportError:
@@ -9,34 +11,53 @@ else:
 
 width = 120
 
-identDefault = {"authed": False, "name": "¯x_(ツ)_/¯ ", "gold":0.0}
-identMock = {"authed": True, "name": "David", "gold":13.37}
-ident = identDefault
-choosengoods = []
+identDefault = {"authed": False, "name": "¯x_(ツ)_/¯ ", "gold": 0.0}
+identMock = {"authed": True, "name": "David", "gold": 13.37}
+
 lastTransactionGoods = []
-timeOut = 50
+timeOutDefault = 300
+timeOut = timeOutDefault
+inputStr = ""
+infoStr = ""
+focusId = -1
+
+ident = identDefault
+session = {"cart": [], "lastTransactionGoods": [], "shortCart": []}
 
 def reset():
 	global ident, colors
 	colors = colorDefault
 	ident = identDefault
-	choosengoods.clear()
+	session["cart"].clear()
+	session["shortCart"].clear()
 	lastTransactionGoods.clear()
 
 def logout():
-	
 	reset()
 
+def login():
+	global ident, colors
+	colors = colorAuthed
+	ident = identMock
+
+
 goods = []
-goods.append({"rang": 1, "name": "Premium Cola", "gold": 0.33})
-goods.append({"rang": 2, "name": "Premium Fanta", "gold": 0.77})
-goods.append({"rang": 3, "name": "Premium Fanta", "gold": 0.77})
-goods.append({"rang": 4, "name": "Premium Fanta", "gold": 0.77})
-goods.append({"rang": 5, "name": "Premium Fanta", "gold": 0.77})
-goods.append({"rang": 6, "name": "Premium Fanta", "gold": 0.77})
-goods.append({"rang": 7, "name": "Premium Fanta", "gold": 0.77})
-goods.append({"rang": 8, "name": "Premium Fanta", "gold": 0.77})
-goods.append({"rang": 9, "name": "Premium Fanta", "gold": 0.77})
+goods.append({"name": "0.10 Gold einzahlen",  "gold": -1, "amount": 1})
+goods.append({"name": "1 Gold einzahlen",  "gold": -1, "amount": 1})
+goods.append({"name": "10 Gold einzahlen",  "gold": -1, "amount": 1})
+goods.append({"name": "Premium Cola",  "gold": 0.33, "amount": 1})
+goods.append({"name": "Premium Fanta", "gold": 0.77, "amount": 1})
+goods.append({"name": "Fritz Cola", "gold": 0.77, "amount": 1})
+goods.append({"name": "Fritz Orange", "gold": 0.77, "amount": 1})
+goods.append({"name": "Fritz Pfirsich", "gold": 0.77, "amount": 1})
+goods.append({"name": "Fritz Apfel", "gold": 0.77, "amount": 1})
+goods.append({"name": "Warsteiner", "gold": 0.77, "amount": 1})
+goods.append({"name": "Becks", "gold": 0.77, "amount": 1})
+goods.append({"name": "Rothaus", "gold": 0.77, "amount": 1})
+goods.append({"name": "Krümel", "gold": 0.77, "amount": 1})
+goods.append({"name": "Kaka", "gold": 0.77, "amount": 1})
+goods.append({"name": "Geschirr", "gold": 0.77, "amount": 1})
+goods.append({"name": "Lukas3", "gold": 0.77, "amount": 1})
 
 colorDefault = {"color1": "white", 
 				"color2": "grey",
@@ -73,30 +94,6 @@ def printFlush(msg):
     print(msg)
     sys.stdout.flush()
 
-def printAllgoods():
-	for l in goods:
-		printColor(str(l["rang"]),'cyan', ": " + l["name"] + " kostet " + str(l["gold"]), 'white')
-	
-
-def printChoosenLiquid():
-	printFlush("Folgende Konsumierungs Gegenstände hast du ausgewählt: ")
-	for l in choosengoods:
-		printColor(str(l["rang"]),'cyan', ": " + l["name"] + " kostet " + str(l["gold"]), 'white')
-	
-
-def chooseLiquid():
-	printFlush("hallo " + ident["name"] + " was möchtest du gerne Konsumieren?")
-	printColor("00:",'cyan', " gold abliefern", 'white')
-	for l in goods:
-		printColor(str(l["rang"]),'cyan', ": " + l["name"] + " kostet " + str(l["gold"]), 'white')
-	auswahl = input("Sag mir die Nummer: ")
-	k = input("du möchstest gerne " + auswahl + " drinken? [j/n] ")
-	if k == "j":
-		choosengoods.append(goods[0])
-		return True
-	else:
-		return False
-
 def header():
 	lenMinus2 = width-2
 	textLoggedIn = "logged in: "
@@ -110,8 +107,13 @@ def header():
 		print(pipe() + (" "*int(l)) + red("nicht zu erkennen gegeben!") + (" "*int(l)) + pipe())
 	#print(pipe() + (" "*lenMinus2) + pipe())
 	print(line("―"))
+	print()
+
+def status():
+	print(color2(str(timeOut)))
 
 def footer():
+	print()
 	print(line("―"))
 	if ident["authed"]:
 		print(color3(" letzter Kuhhandel:")+ " vorgestern 1x Getränke, 2x Süßkram für " 
@@ -119,17 +121,41 @@ def footer():
 		print(color3(" dein Goldspeicher: ") + gold(str(ident["gold"]) + "€", ident["gold"]) +"  | AVG: " 
 					 + str(23.42) +"€ day "  
 					 + str(2.00) +"€ week " 
-					 + str(23.2) +"€ month" 
-					 + "timeout:" + str(timeOut))
+					 + str(23.2) +"€ month")
 	else:
 		l = width/2 - 14
 		print((" "*int(l)) + red("nicht zu erkennen gegeben!") + (" "*int(l)) )
 		print((" "*int(l)) + red("nicht zu erkennen gegeben!") + (" "*int(l)))
 	print(line("―"))
 
+def getIndexOfArray(index, array):
+	if index >= len(array):
+		return {"name":"", "amount": 0}
+	return array[index]
+
+
+
+def body():
+	global focusId
+	print(headline(" verfügbare Konsumgüter") + " " * 52 + headline("Konsumkorb:"))
+	lines = 15
+	rows = 10
+	print()
+	for i in range(0,rows):
+		c1 = " " + '%2s' % str(i) + ": " + '%-20s' % getIndexOfArray(i,goods)["name"]
+		c2 = " " + '%2s' % str(rows+i) + ": " + '%-20s' % getIndexOfArray(rows+i,goods)["name"]
+		c3 = " " + '%2s' % str(2*rows+i) + ": " + '%-20s' % getIndexOfArray(2*rows+i,goods)["name"]
+		c4 = " " + str(getIndexOfArray(i,session["shortCart"])["amount"]) + "x "+ '%-20s' % getIndexOfArray(i,session["shortCart"])["name"] 
+		if i == focusId: c1 = color3(c1)
+		if rows+i == focusId: c2 = color3(c2)
+		if 2*rows+i == focusId: c3 = color3(c3)
+		print(c1+c2+c3+c4)
+	print()
+
 def printInput():
-	i = "asd"
-	print("Input: " + i)
+	global inputStr, infoStr
+	print(color3(" Info: ") + infoStr)
+	print(color3(" Input: ") + inputStr)
 
 def auth():
 	# clear screen
@@ -139,25 +165,96 @@ def auth():
 	#check auth
 	return {"authed": True, "id": 7, "name": name, }
 
+def addGoodToCart(id):
+	global session, goods
+	if id <= len(goods):
+		session["cart"].append(goods[id])
+	session["shortCart"].clear()
+	for c in session["cart"]:
+		found = False
+		for sc in session["shortCart"]:
+			if sc["name"] == c["name"]:
+				sc["amount"] = sc["amount"] + c["amount"]
+				found = True
+		if not found:
+			cc = c.copy()
+			cc["amount"] = 1
+			session["shortCart"].append(cc)
+
+	# build shortCart
+
+def inputHandler(enter):
+	global infoStr, focusId
+	try:
+		i = int(inputStr)
+		if enter:
+			infoStr = "Konsumgut mit id "+str(i)+" gefunden"
+			addGoodToCart(i)
+		else:
+			focusId = i
+	except ValueError:
+		focusId = -1
+		#infoStr = "nicht erkannt"
+		pass
+
+
+def keyHandler():
+	global inputStr, timeOut, timeOutDefault, focusId
+	try:
+		while True:
+			time.sleep(0.01)
+			key = getkey()
+			if key == "e" or key == "E":
+				inputHandler(True)
+				#inputStr = "" # lieber mal drin lassen für mehrfach kauf
+				#focusId = -1 # same as above
+			elif key == "q" or key == "Q":
+				os._exit(1)
+			elif key == "b" or key == "B":
+				#inputStr = "barcode!"
+				pass
+			elif key == "r" or key == "R":
+				#inputStr = "RFID!"
+				pass
+			elif key == "l" or key == "L":
+				#inputStr = "RFID!"
+				login()
+				pass
+			elif key == "c" or key == "C":
+				#focusId = -1
+				inputStr = inputStr[:-1]
+			elif key == "0" or key == "1" or key == "2"or key == "3"or key == "4"or key == "5"or key == "6" or key == "7" or key == "8" or key == "9":
+				inputStr = inputStr + key
+
+			if key != "":
+				inputHandler(False)
+				timeOut = timeOutDefault
+	except Exception as e:
+		print (e)
+		os._exit(1)
+
+def timeOutHandler():
+	global timeOut
+	if timeOut:
+		timeOut = timeOut - 1
+	if(timeOut <= 0):
+		logout()
+
 reset()
 ident = identMock
 colors = colorAuthed
+_thread.start_new_thread(keyHandler, ())
 if __name__ == '__main__':
 	while True:
 		clear()
 		#colors = colorError
 		header()
-		print()
-		print(headline("verfügbare Konsumgüter"))
-		printAllgoods()
-		print()
-		print()
-		print()
-		print()
-		print()
-		printInput()
-		footer()
+		body()
+		printInput() # lines
+		footer() # 4 lines
+		status()
+		print(session)
 		time.sleep(0.1)
-		timeOut = timeOut - 1
-		if(timeOut < 0.0):
-			logout()
+		timeOutHandler()
+		
+		
