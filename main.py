@@ -1,5 +1,5 @@
 #!/usr/bin/env python3 
-import os, sys, time, _thread, keyboard
+import os, sys, time, _thread
 from getkey import getkey, keys
 
 try:
