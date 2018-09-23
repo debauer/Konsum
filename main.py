@@ -253,7 +253,7 @@ if __name__ == '__main__':
 		printInput() # lines
 		footer() # 4 lines
 		status()
-		print(session)
+		#print(session)
 		time.sleep(0.1)
 		timeOutHandler()
 		
